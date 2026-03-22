@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.4">
+<title>G2 · First Stand 2026 · The West Is Back</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,700;0,900;1,700;1,900&family=Barlow:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --red: #EF3D23;
+    --scale: 1.4;
+    --u: calc(min(1vw, 1vh) * var(--scale));
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #060606;
+    font-family: 'Barlow Condensed', sans-serif;
+  }
+
+  #canvas { position: fixed; inset: 0; z-index: 0; }
+
+  .vignette {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(ellipse 75% 70% at 50% 48%,
+      transparent 0%, rgba(6,6,6,0.45) 55%, rgba(6,6,6,0.95) 100%);
+  }
+
+  .scan {
+    position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    background: repeating-linear-gradient(to bottom,
+      transparent, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px);
+  }
+
+  .deco-lines { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+  .deco-line {
+    position: absolute; top: -10%; width: 1px; height: 120%;
+    background: linear-gradient(to bottom, transparent,
+      rgba(239,61,35,0.25) 45%, rgba(239,61,35,0.5) 50%,
+      rgba(239,61,35,0.25) 55%, transparent);
+    transform: rotate(16deg); transform-origin: top center;
+    animation: linePulse var(--dur) ease-in-out infinite;
+  }
+  @keyframes linePulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+  /* Burst */
+  .burst {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    animation: burstFade 2s ease both;
+  }
+  @keyframes burstFade { 0%,70%{opacity:1} 100%{opacity:0} }
+  .burst-ring {
+    position: absolute; border-radius: 50%;
+    border: 1.5px solid var(--red);
+    animation: burstExpand 1.8s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .burst-ring:nth-child(2){animation-delay:.18s;border-color:rgba(239,61,35,.5)}
+  .burst-ring:nth-child(3){animation-delay:.36s;border-color:rgba(239,61,35,.2)}
+  @keyframes burstExpand { 0%{width:0;height:0;opacity:1} 100%{width:220vmax;height:220vmax;opacity:0} }
+
+  /* ── Layout: 所有间距用 --u 等比缩放 ── */
+  .layout {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: calc(var(--u) * 1.6);
+    padding: calc(var(--u) * 3) calc(var(--u) * 5);
+  }
+
+  /* Event badge */
+  .event-wrap {
+    display: flex; align-items: center; gap: calc(var(--u) * 1.4);
+    animation: fromTop 1.1s cubic-bezier(0.16,1,0.3,1) both .15s;
+  }
+  .event-chip {
+    font-family: 'Barlow', sans-serif; font-weight: 500;
+    font-size: calc(var(--u) * 1.1); letter-spacing: .28em;
+    text-transform: uppercase; color: var(--red);
+    border: 1px solid rgba(239,61,35,.4); border-radius: 3px;
+    padding: calc(var(--u)*.5) calc(var(--u)*1.4); background: rgba(239,61,35,.07);
+  }
+  .event-dot { width:calc(var(--u)*.4); height:calc(var(--u)*.4); border-radius:50%; background:rgba(255,255,255,.15); }
+  .event-sub {
+    font-family: 'Barlow', sans-serif; font-weight: 300;
+    font-size: calc(var(--u) * 1.05); letter-spacing: .22em;
+    text-transform: uppercase; color: rgba(255,255,255,.2);
+  }
+
+  /* Logo */
+  .logo-img {
+    width: calc(var(--u) * 15);
+    height: auto; display: block;
+    animation: fromTop 1s cubic-bezier(0.16,1,0.3,1) both .3s,
+               logoGlow 4s ease-in-out 1.3s infinite;
+  }
+  @keyframes logoGlow {
+    0%,100%{filter:drop-shadow(0 0 calc(var(--u)*1.8) rgba(239,61,35,.65)) drop-shadow(0 0 calc(var(--u)*5) rgba(239,61,35,.25))}
+    50%    {filter:drop-shadow(0 0 calc(var(--u)*3.5) rgba(255,50,20,1))   drop-shadow(0 0 calc(var(--u)*9) rgba(239,61,35,.55))}
+  }
+
+  /* Score */
+  .score-wrap {
+    display: flex; align-items: center; gap: calc(var(--u) * 3.5);
+    animation: fromBottom 1s cubic-bezier(0.16,1,0.3,1) both .5s;
+  }
+  .score-num { font-weight:900; font-style:italic; line-height:1; font-size:calc(var(--u)*17); }
+  .score-num.win { color:var(--red); animation: scorePulse 3s ease-in-out infinite; }
+  @keyframes scorePulse {
+    0%,100%{text-shadow:0 0 calc(var(--u)*3) rgba(239,61,35,.9),0 0 calc(var(--u)*7) rgba(239,61,35,.4)}
+    50%    {text-shadow:0 0 calc(var(--u)*5.5) rgba(255,60,20,1),0 0 calc(var(--u)*12) rgba(239,61,35,.6)}
+  }
+  .score-num.loss { color:rgba(90,90,90,.5); }
+  .score-sep { display:flex; flex-direction:column; align-items:center; gap:calc(var(--u)*.6); }
+  .sep-line { width:1.5px; height:calc(var(--u)*6.5); background:linear-gradient(to bottom,transparent,rgba(255,255,255,.18),transparent); }
+  .sep-label { font-family:'Barlow',sans-serif; font-weight:300; font-size:calc(var(--u)*.85); letter-spacing:.3em; color:rgba(255,255,255,.18); text-transform:uppercase; }
+
+  /* Gems */
+  .gems-row {
+    display:flex; align-items:center; gap:calc(var(--u)*1.1);
+    animation: fromBottom 1s cubic-bezier(0.16,1,0.3,1) both .65s;
+  }
+  .gem {
+    width:calc(var(--u)*2); height:calc(var(--u)*2); background:var(--red);
+    clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+    animation:gemPop 3s ease-in-out infinite;
+  }
+  .gem:nth-child(1){animation-delay:0s}.gem:nth-child(2){animation-delay:-.5s}
+  .gem:nth-child(3){animation-delay:-1s}.gem:nth-child(4){animation-delay:-1.5s}
+  .gem:nth-child(5){animation-delay:-2s}.gem:nth-child(6){animation-delay:-2.5s}
+  @keyframes gemPop {
+    0%,100%{filter:brightness(.7) drop-shadow(0 0 calc(var(--u)*.25) rgba(239,61,35,.3));transform:scale(1)}
+    50%    {filter:brightness(1.4) drop-shadow(0 0 calc(var(--u)*.7) rgba(239,61,35,1));transform:scale(1.18)}
+  }
+  .gems-tag { font-family:'Barlow',sans-serif; font-weight:300; font-size:calc(var(--u)*.85); letter-spacing:.35em; color:rgba(255,255,255,.18); text-transform:uppercase; margin-left:calc(var(--u)*.4); }
+
+  /* Defeated */
+  .defeated-wrap {
+    display:flex; align-items:center;
+    animation: fromBottom 1.1s cubic-bezier(0.16,1,0.3,1) both .8s;
+  }
+  .def-label {
+    font-family:'Barlow',sans-serif; font-weight:300; font-size:calc(var(--u)*.85); letter-spacing:.3em;
+    text-transform:uppercase; color:rgba(255,255,255,.16);
+    padding-right:calc(var(--u)*1.4); border-right:1px solid rgba(255,255,255,.06); margin-right:calc(var(--u)*1.4);
+  }
+  .def-cards { display:flex; align-items:center; gap:calc(var(--u)*1.4); }
+  .def-card {
+    display:flex; flex-direction:column; align-items:center; gap:calc(var(--u)*.45);
+    padding:calc(var(--u)*1) calc(var(--u)*2);
+    border:1px solid rgba(255,255,255,.06); border-radius:6px;
+    background:rgba(255,255,255,.025); position:relative; overflow:hidden;
+  }
+  .def-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(239,61,35,.04),transparent 60%); }
+  .def-seed { font-family:'Barlow',sans-serif; font-weight:300; font-size:calc(var(--u)*.8); letter-spacing:.3em; text-transform:uppercase; color:var(--red); opacity:.7; }
+  .def-name { font-weight:700; font-style:italic; font-size:calc(var(--u)*2); letter-spacing:.05em; text-transform:uppercase; color:rgba(255,255,255,.6); }
+  .def-score { font-family:'Barlow',sans-serif; font-weight:300; font-size:calc(var(--u)*.8); letter-spacing:.2em; color:rgba(255,255,255,.22); }
+  .def-slash { font-size:calc(var(--u)*2.2); font-weight:300; color:rgba(255,255,255,.06); }
+
+  /* Roster */
+  .roster-wrap {
+    display:flex; align-items:center; gap:calc(var(--u)*2.8);
+    animation: fromBottom 1.1s cubic-bezier(0.16,1,0.3,1) both 1s;
+  }
+  .player { text-align:center; }
+  .p-role { font-family:'Barlow',sans-serif; font-weight:300; font-size:calc(var(--u)*.8); letter-spacing:.28em; text-transform:uppercase; color:rgba(255,255,255,.18); margin-bottom:calc(var(--u)*.3); }
+  .p-name { font-weight:700; font-style:italic; font-size:calc(var(--u)*1.45); letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.65); transition:color .3s; }
+  .player:hover .p-name { color:var(--red); }
+  .p-div { width:1px; height:calc(var(--u)*3.8); background:rgba(255,255,255,.06); }
+
+  /* Tagline */
+  .tagline {
+    font-family:'Barlow Condensed',sans-serif; font-weight:900; font-style:italic;
+    font-size:calc(var(--u)*1.1); letter-spacing:.4em;
+    text-transform:uppercase; color:rgba(255,255,255,.12);
+    animation: fromBottom 1.2s cubic-bezier(0.16,1,0.3,1) both 1.15s;
+  }
+
+  @keyframes fromTop    { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fromBottom { from{opacity:0;transform:translateY(20px)}  to{opacity:1;transform:translateY(0)} }
+
+  .stamp {
+    position:fixed; bottom:calc(var(--u)*1.6); right:calc(var(--u)*2.2); z-index:20;
+    font-family:'Barlow',sans-serif; font-weight:300; font-size:calc(var(--u)*.8); letter-spacing:.3em;
+    text-transform:uppercase; color:rgba(255,255,255,.1);
+    animation: fromBottom 1.5s ease both 1.4s;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<div class="vignette"></div>
+<div class="scan"></div>
+
+<div class="deco-lines">
+  <div class="deco-line" style="left:17%;--dur:5.5s;animation-delay:0s;"></div>
+  <div class="deco-line" style="left:83%;--dur:6.2s;animation-delay:-3s;"></div>
+  <div class="deco-line" style="left:51%;--dur:8s;animation-delay:-5s;opacity:.4;"></div>
+</div>
+
+<div class="burst">
+  <div class="burst-ring"></div>
+  <div class="burst-ring"></div>
+  <div class="burst-ring"></div>
+</div>
+
+<div class="layout">
+
+  <div class="event-wrap">
+    <div class="event-chip">First Stand 2026</div>
+    <div class="event-dot"></div>
+    <div class="event-sub">Knockout Stage · Quarter-finals &amp; Semi-finals</div>
+  </div>
+
+  <img class="logo-img" src="g2logo.png" alt="G2 Esports" />
+
+  <div class="score-wrap">
+    <div class="score-num win">6</div>
+    <div class="score-sep">
+      <div class="sep-line"></div>
+      <div class="sep-label">W · L</div>
+      <div class="sep-line"></div>
+    </div>
+    <div class="score-num loss">0</div>
+  </div>
+
+  <div class="gems-row">
+    <div class="gem"></div><div class="gem"></div><div class="gem"></div>
+    <div class="gem"></div><div class="gem"></div><div class="gem"></div>
+    <div class="gems-tag">Perfect Run</div>
+  </div>
+
+  <div class="defeated-wrap">
+    <div class="def-label">Defeated</div>
+    <div class="def-cards">
+      <div class="def-card">
+        <div class="def-seed">LCK #2 · QF</div>
+        <div class="def-name">BFX</div>
+        <div class="def-score">G2 3 – 0 BFX</div>
+      </div>
+      <div class="def-slash">×</div>
+      <div class="def-card">
+        <div class="def-seed">LCK #1 · SF</div>
+        <div class="def-name">Gen.G</div>
+        <div class="def-score">G2 3 – 0 GEN</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="roster-wrap">
+    <div class="player"><div class="p-role">Top</div><div class="p-name">BrokenBlade</div></div>
+    <div class="p-div"></div>
+    <div class="player"><div class="p-role">Jungle</div><div class="p-name">SkewMond</div></div>
+    <div class="p-div"></div>
+    <div class="player"><div class="p-role">Mid</div><div class="p-name">Caps</div></div>
+    <div class="p-div"></div>
+    <div class="player"><div class="p-role">Bot</div><div class="p-name">Hans Sama</div></div>
+    <div class="p-div"></div>
+    <div class="player"><div class="p-role">Support</div><div class="p-name">Labrov</div></div>
+    <div class="p-div"></div>
+    <div class="player"><div class="p-role">Coach</div><div class="p-name">Dylan</div></div>
+  </div>
+
+  <div class="tagline">The West Is Back</div>
+
+</div>
+
+<div class="stamp">G2 Esports · First Stand 2026 · Hong Kong</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+
+function init() {
+  particles=[];
+  for(let i=0;i<130;i++)particles.push(new P(true));
+  for(let i=0;i<230;i++)particles.push(new P(false));
+}
+init();
+
+setInterval(()=>{
+  for(let i=0;i<22;i++){
+    const p=new P(true);
+    p.x=W/2+(Math.random()-.5)*340; p.y=H/2+(Math.random()-.5)*220;
+    particles.push(p);
+  }
+  if(particles.length>420)particles.splice(0,22);
+},4500);
+
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  for(const p of particles){p.tick();p.draw();}
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
